@@ -104,9 +104,6 @@ app.get('/info', (request, response) => {
   } 
 }
 
-
-
-
 // Add person
 //Tapahtumankäsittelijäfunktio dataan käsiksi viittaamalla request.body.
 app.post('/api/persons', (request, response) => {
