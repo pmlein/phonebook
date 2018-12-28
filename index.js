@@ -124,11 +124,7 @@ app.post('/api/persons', (request, response) => {
      return response.status(400).json({ error: 'Number has to be given' })
    }
 
-  /*if (nameExists(body.name)!==null) {
-    return response.status(400).json({ error: `name ${body.name} already exists` })
-  }
-*/
-
+ 
  // persons = persons.concat(newPerson)
  // Tallennetaan tietokantaan
  person
@@ -144,6 +140,42 @@ app.post('/api/persons', (request, response) => {
  const generateId = () => {
   return Math.floor(Math.random(1000)*100000)
 } 
+
+
+// update
+app.put('/api/persons/:id', (request, response) => {
+  const body = request.body
+  const person = {
+    name: body.name,
+    number: body.number,
+    id: body._id
+  }
+  console.log('PUT Number ', body.number)
+  Person
+     .findByIdAndUpdate(request.params.id, person, {new: true})
+      .then(updatedPerson => {
+        response.json(updatedPerson)
+      })
+      .catch(error => {
+        console.log(error)
+        response.status(400).json({ error: 'malformatted id' })
+      })
+    })
+   //if (person.number === false) {
+     //return response.status(400).json({ error: 'Number has to be given' })
+   
+/* if (nameExists(body.name)!==null) {
+      person.update({ number: body.number})
+        .then(savedPerson => {
+          response.json(savedPerson)
+        })
+        .catch(error => {
+          console.log(error)
+          response.status(400).send({ error: 'Update error: malformatted id? (Post)' })
+        })
+    pois tämä return response.status(400).json({ error: `name ${body.name} already exists` })
+  } */
+
 
 
 
