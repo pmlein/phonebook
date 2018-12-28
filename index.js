@@ -1,23 +1,37 @@
 const http = require('http')
-
+var dotenv = require('dotenv')
+dotenv.config()
 const express = require('express')
 const app = express()
+const middleware = require('./utils/middleware')
+
+
+const bodyParser = require('body-parser')
+const cors = require('cors')
+app.use(cors())
+
 app.use(express.static('build'))
 
-const cors = require('cors')
+app.use(middleware.logger)
 
-app.use(cors())
+//app.use(middleware.error)
+
+
+const Person = require('./models/person')
 
 const morgan = require('morgan')
 
 
 // tehtävä 3.8* kesken
-
 // morgan.token('data', function (req, res) { return JSON.stringify(req.body) })
 morgan.token('id', function getId (req) {
   return req.id
 })
-const bodyParser = require('body-parser')
+// tehtävä 3.8* kesken
+
+
+
+
 
 app.use(bodyParser.json())
 app.use(morgan('tiny'))
@@ -25,40 +39,25 @@ app.use(morgan('tiny'))
 
 
 
-// Javascript object
-let persons = [
-    {
-      "name": "Arto Hellas",
-      "number": "040-123456",
-      "id": 1
-    },
-    {
-      "name": "Martti Tienari",
-      "number": "040-123456",
-      "id": 2
-    },
-    {
-      "name": "Arto Järvinen",
-      "number": "040-123456",
-      "id": 3
-    },
-    {
-      "name": "Lea Kutvonen",
-      "number": "040-1234567",
-      "id": 4
-    }
-]
 
 // http-get -request, vastataan response-olion send-metodilla
-app.get('/', (req, res) => {
+/*app.get('/', (req, res) => {
     res.send('<h1>Phonebook</h1>')
   })
+*/
+
+
 
   // Vastaus: json-muotoinen _merkkijono_ 
   // express hoitaa muunnoksen json-muotoon (ei tarvita JSON.stringify)
   app.get('/api/persons', (req, res) => {
-    res.json(persons)
-  })
+    Person
+      .find({})
+      .then(persons => {
+        res.json(persons)      
+      })
+    
+  }) 
 
 
 // Info page
@@ -94,7 +93,7 @@ app.get('/info', (request, response) => {
 
  /*
    Checks that name does not exist in phone book
-  */
+  
  nameExists = (newN) => {    
   let found = persons.filter(p => p.name === newN)
   if (found.length > 0) {
@@ -103,39 +102,45 @@ app.get('/info', (request, response) => {
     return null
   } 
 }
+*/
 
 // Add person
 //Tapahtumankäsittelijäfunktio dataan käsiksi viittaamalla request.body.
 app.post('/api/persons', (request, response) => {
   const body = request.body
-
   if (body.name === undefined) {
     return response.status(400).json({ error: 'content missing' })
   }
-
-  const newPerson = {
+  const person = new Person({
     name: body.name || false,
     number: body.number || false,
     id: generateId()
-  }
-
-  if (newPerson.name === false) {
+  })
+  if (person.name === false) {
     return response.status(400).json({ error: 'Name has to be given' })
   }
   console.log('Number ', body.number)
-   if (newPerson.number === false) {
+   if (person.number === false) {
      return response.status(400).json({ error: 'Number has to be given' })
    }
 
-  if (nameExists(body.name)!==null) {
+  /*if (nameExists(body.name)!==null) {
     return response.status(400).json({ error: `name ${body.name} already exists` })
   }
+*/
 
-  persons = persons.concat(newPerson)
-
-  response.json(newPerson)
+ // persons = persons.concat(newPerson)
+ // Tallennetaan tietokantaan
+ person
+    .save()
+    .then(savedPerson => {
+      response.json(savedPerson)
+    })
+    .catch(error => {
+      console.log(error)
+      response.status(400).send({ error: 'malformatted id? (Post)' })
+    })
 })
-
  const generateId = () => {
   return Math.floor(Math.random(1000)*100000)
 } 
@@ -143,13 +148,17 @@ app.post('/api/persons', (request, response) => {
 
 
  // Resurssin poistava route
- app.delete('/api/persons/:number', (request, response) => {
-  const number = request.params.number
-  persons = persons.filter(person => person.number !== number)
-  // Poisto onnistuu:  204 no content, sillä ei lähetetä dataa
-  // epäonnistuessa palautuu sama 204
-  response.status(204).end()
-})
+ app.delete('/api/persons/:id', (request, response) => {
+   Person
+     .findByIdAndRemove(request.params.id)
+     .then(result => {
+       response.status(240).end()
+     })
+     .catch(error => {
+       response.status(400).send({error: 'malformed name'})
+       })
+     })
+
 
 
 const error = (request, response) => {
